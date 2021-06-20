@@ -132,6 +132,73 @@ class MACDCross(Strategy):
             self.position.close()
 
 
+"""
+BB
+Bollinger Bands
+If the moving average is upward, the market is in an uptrend; if it is sideways, 
+the market is in a faltering phase with no sense of direction; 
+and if it is downward, the market is in a downtrend.
+If the price is above the moving average, it is judged to be a strong market, 
+and if it is below, it is judged to be a weak market.
+"""
+class BBCross(Strategy):
+    def __init__(self, broker, data, params, d=20, upper_sigma=2, lower_sigma=2):
+        self._indicators = []
+        self._broker: _Broker = broker
+        self._data: _Data = data
+        self._params = self._check_params(params)
+        self.__d = d
+        self.__upper_sigma = upper_sigma
+        self.__lower_sigma = lower_sigma
+
+    @property
+    def d(self):
+        return self.__d
+
+    @d.setter
+    def d(self, value):
+        self.__d = value
+
+    @property
+    def upper_sigma(self):
+        return self.__upper_sigma
+
+    @upper_sigma.setter
+    def upper_sigma(self, value):
+        self.__upper_sigma = value
+    
+    @property
+    def lower_sigma(self):
+        return self.__lower_sigma
+
+    @lower_sigma.setter
+    def sigma(self, value):
+        self.__lower_sigma = value
+
+    @staticmethod
+    def calc(close, d, upper_sigma, lower_sigma):
+        bb = pd.DataFrame()
+        bb['close'] = close
+        # Simple Moving Average. short, middle, long
+        bb['sma'] = bb['close'].rolling(window = d).mean()
+        bb['std'] = bb['close'].rolling(window = d).std()
+        bb['bb_upper'] = bb['sma']  + bb['std'] * upper_sigma
+        bb['bb_lower'] = bb['sma']  - bb['std'] * lower_sigma
+        return bb
+    
+    def get(self, close, d, upper_sigma, lower_sigma):
+        bb = self.calc(close, d, upper_sigma, lower_sigma)
+        return bb['bb_upper'], bb['bb_lower'], bb['close']
+
+    def init(self):
+        self.upper, self.lower, self.close = self.I(self.get, self.data['Close'], self.d, self.upper_sigma, self.lower_sigma)
+    
+    def next(self):
+        if crossover(self.close, self.lower):
+            self.buy()
+        elif crossover(self.upper, self.close):
+            self.position.close()
+
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
