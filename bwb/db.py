@@ -52,6 +52,8 @@ class LocalDB():
                 df_end['Volume'] = df_end['Volume'].astype(float)
                 df = pd.concat([df, df_end[1:]], axis=0)
                 update = True
+        df = df[~df.duplicated(subset='Date')]
+        df.index = pd.to_datetime(df.index)
         if (self.db_ext == 'csv') and update:
             df.to_csv(file_path, index = None)
         return df
