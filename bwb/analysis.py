@@ -18,7 +18,7 @@ and if it is downward, the market is in a downtrend.
 If the price is above the moving average, it is judged to be a strong market, 
 and if it is below, it is judged to be a weak market.
 """
-class MACross(Strategy):
+class SMACross(Strategy):
     def __init__(self, broker, data, params, n1=5, n2=25):
         self._indicators = []
         self._broker: _Broker = broker
