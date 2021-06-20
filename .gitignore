@@ -1,3 +1,5 @@
 .vscode
 debug.py
 MACDCross.html
+/LocalDB/
+*.pyc
