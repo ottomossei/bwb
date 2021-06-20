@@ -40,14 +40,13 @@ class LocalDB():
             start_db_str = start_db_dt.strftime('%Y/%m/%d')
             end_db_dt = dt.strptime(df['Date'].values[-1], '%Y-%m-%d') + td(days=1)
             end_db_str = end_db_dt.date().strftime('%Y/%m/%d')
-
             if start_dt < start_db_dt.date():
                 df_start = self._reader(issue, start_str, start_db_str, source)
                 df_start['Date'] = df_start['Date'].astype(str)
                 df_start['Volume'] = df_start['Volume'].astype(float)
                 df = pd.concat([df_start, df], axis=0)
                 update = True
-            if (end_dt >= end_db_dt.date()) and  (type(end_dt) is datetime.datetime):
+            if (end_dt >= end_db_dt.date()) and  (type(end_dt) is not datetime.datetime):
                 df_end = self._reader(issue, end_str, end_db_str, source)
                 df_end['Date'] = df_end['Date'].astype(str)
                 df_end['Volume'] = df_end['Volume'].astype(float)
