@@ -4,21 +4,22 @@
 import pandas as pd
 from backtesting import Backtest, Strategy 
 from backtesting.lib import crossover
+import indicator
 
 class Btest(Backtest):
     def _init__(self):
         super().__init__()
 
-"""
-MA(SMA)
-Simple Moving Average Trading Method
-If the moving average is upward, the market is in an uptrend; if it is sideways, 
-the market is in a faltering phase with no sense of direction; 
-and if it is downward, the market is in a downtrend.
-If the price is above the moving average, it is judged to be a strong market, 
-and if it is below, it is judged to be a weak market.
-"""
 class SMACross(Strategy):
+    """
+    MA(SMA)
+    Simple Moving Average Trading Method
+    If the moving average is upward, the market is in an uptrend; if it is sideways, 
+    the market is in a faltering phase with no sense of direction; 
+    and if it is downward, the market is in a downtrend.
+    If the price is above the moving average, it is judged to be a strong market, 
+    and if it is below, it is judged to be a weak market.
+    """
     def __init__(self, broker, data, params, n1=5, n2=25):
         self._indicators = []
         self._broker: _Broker = broker
@@ -42,22 +43,14 @@ class SMACross(Strategy):
     @n2.setter
     def n2(self, value):
         self.__n2 = value
-
-    @staticmethod
-    def calc(close, n1, n2):
-        sma = pd.DataFrame()
-        sma['close'] = close
-        # Simple Moving Average. short, middle, long
-        sma['sma_short'] = sma['close'].rolling(window = n1).mean()
-        sma['sma_long'] = sma['close'].rolling(window = n2).mean()
-        return sma
     
-    def get(self, close, n1, n2):
-        sma = self.calc(close, n1, n2)
-        return sma['sma_short'], sma['sma_long']
+    def get(self):
+        sma_short = indicator.sma(self.data, self.n1)
+        sma_long = indicator.sma(self.data, self.n2)
+        return sma_short, sma_long
 
     def init(self):
-        self.short, self.long = self.I(self.get, self.data['Close'], self.n1, self.n2)
+        self.short, self.long = self.I(self.get)
     
     def next(self):
         if crossover(self.short, self.long):
@@ -66,14 +59,14 @@ class SMACross(Strategy):
             self.position.close()
 
 
-"""
-MACD
-Moving Average Convergence ／ Divergence Trading Method
-MACD gives weight to the most recent values, and the weight decreases as the data gets older. 
-Unlike simple moving averages, it avoids the fact that n-day old data and yesterday's data 
-have the same weight, while at the same time n-day old data is not completely dropped.
-"""
 class MACDCross(Strategy):
+    """
+    MACD
+    Moving Average Convergence ／ Divergence Trading Method
+    MACD gives weight to the most recent values, and the weight decreases as the data gets older. 
+    Unlike simple moving averages, it avoids the fact that n-day old data and yesterday's data 
+    have the same weight, while at the same time n-day old data is not completely dropped.
+    """
     def __init__(self, broker, data, params, n1=12, n2=26, ns=9):
         self._indicators = []
         self._broker: _Broker = broker
@@ -106,24 +99,12 @@ class MACDCross(Strategy):
     @ns.setter
     def ns(self, value):
         self.__ns = value
-
-    @staticmethod
-    def calc(close, n1, n2, ns):
-        macd = pd.DataFrame()
-        macd['close'] = close
-        # Exponential Moving Average. short & long
-        macd['ema_short'] = macd['close'].ewm(span=n1).mean()
-        macd['ema_long'] = macd['close'].ewm(span=n2).mean()
-        macd['macd'] = macd['ema_short'] - macd['ema_long']
-        macd['macdsignal'] = macd['macd'].ewm(span=ns).mean()
-        return macd
     
-    def get(self, close, n1, n2, ns):
-        macd = self.calc(close, n1, n2, ns)
-        return macd['macd'], macd['macdsignal']
+    def get(self):
+        return indicator.macd(data, self.n1, self.n2, self.ns)
 
     def init(self):
-        self.macd, self.macdsignal = self.I(self.get, self.data['Close'], self.n1, self.n2, self.ns)
+        self.macd, self.macdsignal = self.I(self.get)
     
     def next(self):
         if crossover(self.macd, self.macdsignal):
@@ -132,16 +113,16 @@ class MACDCross(Strategy):
             self.position.close()
 
 
-"""
-BB
-Bollinger Bands
-If the moving average is upward, the market is in an uptrend; if it is sideways, 
-the market is in a faltering phase with no sense of direction; 
-and if it is downward, the market is in a downtrend.
-If the price is above the moving average, it is judged to be a strong market, 
-and if it is below, it is judged to be a weak market.
-"""
 class BBCross(Strategy):
+    """
+    BB
+    Bollinger Bands
+    If the moving average is upward, the market is in an uptrend; if it is sideways, 
+    the market is in a faltering phase with no sense of direction; 
+    and if it is downward, the market is in a downtrend.
+    If the price is above the moving average, it is judged to be a strong market, 
+    and if it is below, it is judged to be a weak market.
+    """
     def __init__(self, broker, data, params, d=20, upper_sigma=2, lower_sigma=2):
         self._indicators = []
         self._broker: _Broker = broker
@@ -174,41 +155,34 @@ class BBCross(Strategy):
     @lower_sigma.setter
     def sigma(self, value):
         self.__lower_sigma = value
-
-    @staticmethod
-    def calc(close, d, upper_sigma, lower_sigma):
-        bb = pd.DataFrame()
-        bb['close'] = close
-        # Simple Moving Average. short, middle, long
-        bb['sma'] = bb['close'].rolling(window = d).mean()
-        bb['std'] = bb['close'].rolling(window = d).std()
-        bb['bb_upper'] = bb['sma']  + bb['std'] * upper_sigma
-        bb['bb_lower'] = bb['sma']  - bb['std'] * lower_sigma
-        return bb
     
-    def get(self, close, d, upper_sigma, lower_sigma):
-        bb = self.calc(close, d, upper_sigma, lower_sigma)
-        return bb['bb_upper'], bb['bb_lower'], bb['close']
+    def get(self):
+        return indicator.ci(self.data, self.d, self.upper_sigma, self.lower_sigma)
 
     def init(self):
-        self.upper, self.lower, self.close = self.I(self.get, self.data['Close'], self.d, self.upper_sigma, self.lower_sigma)
+        self.upper, self.lower = self.I(self.get)
     
     def next(self):
-        if crossover(self.close, self.lower):
+        if crossover(self.data['Close'], self.lower):
             self.buy()
-        elif crossover(self.upper, self.close):
+        elif crossover(self.upper, self.data['Close']):
             self.position.close()
+
+
 
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
     data = d.loader('AAPL', '2015/01/01')
+    strategy = BBCross
     strategy = MACDCross
     # setter
-    strategy.n1 = 100
-    strategy.n2 = 26
-    strategy.ns = 10
+    # strategy.n1 = 100
+    # strategy.n2 = 26
+    # strategy.ns = 10
 
+    import time
+    start = time.time()
     bt = Btest(
         data = data,
         strategy = strategy,
@@ -221,10 +195,10 @@ if __name__ == "__main__":
 
     output = bt.run()
     bt.plot()
+    elapsed_time = time.time() - start
+    print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
     print(output)
-
-    """
-    # Calculate only MACD with variables independent of the strategy
-    macd = strategy.calc(data['Close'], 12, 26, 9)
-    print(macd)
-    """
+    # print(indicator.sma(data))
+    # print(type(indicator.sma(data)))
+    # print(indicator.macd(data)[0])
+    # print(type(indicator.macd(data)[0]))
