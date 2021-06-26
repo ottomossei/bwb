@@ -125,8 +125,8 @@ class BBCross(Strategy):
     """
     def __init__(self, broker, data, params, d=20, upper_sigma=2, lower_sigma=2):
         self._indicators = []
-        self._broker: _Broker = broker
-        self._data: _Data = data
+        self._broker = broker
+        self._data = data
         self._params = self._check_params(params)
         self.__d = d
         self.__upper_sigma = upper_sigma
@@ -157,7 +157,7 @@ class BBCross(Strategy):
         self.__lower_sigma = value
     
     def get(self):
-        return indicator.ci(self.data, self.d, self.upper_sigma, self.lower_sigma)
+        return indicator.ci(data, self.d, self.upper_sigma, self.lower_sigma)
 
     def init(self):
         self.upper, self.lower = self.I(self.get)
@@ -168,14 +168,48 @@ class BBCross(Strategy):
         elif crossover(self.upper, self.data['Close']):
             self.position.close()
 
+class DMICross(Strategy):
+    """
+    DMI
+    https://info.monex.co.jp/technical-analysis/indicators/015.html
+    Directional Movement Index
+    The feature of this indicator is to read the strength or weakness of the market by determining whether the high or low of the day is greater 
+    than the high or low of the previous day, ignoring the comparison of closing prices, and to analyze the trend based on the volatility of prices.
+    """
+    def __init__(self, broker, data, params, d=14):
+        self._indicators = []
+        self._broker = broker
+        self._data = data
+        self._params = self._check_params(params)
+        self.__d = d
 
+    @property
+    def d(self):
+        return self.__d
+
+    @d.setter
+    def d(self, value):
+        self.__d = value
+    
+    def get(self):
+        return indicator.di(data, self.d)
+
+    def init(self):
+        self.di_p, self.di_m = self.I(self.get)
+    
+    def next(self):
+        if crossover(self.di_p, self.di_m):
+            self.buy()
+        elif crossover(self.di_m, self.di_p):
+            self.position.close()
 
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
     data = d.loader('AAPL', '2015/01/01')
-    strategy = BBCross
-    strategy = MACDCross
+    # strategy = MACDCross
+    strategy = DMICross
+    # strategy = BBCross
     # setter
     # strategy.n1 = 100
     # strategy.n2 = 26
@@ -194,11 +228,7 @@ if __name__ == "__main__":
         )
 
     output = bt.run()
-    bt.plot()
     elapsed_time = time.time() - start
     print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
+    bt.plot()
     print(output)
-    # print(indicator.sma(data))
-    # print(type(indicator.sma(data)))
-    # print(indicator.macd(data)[0])
-    # print(type(indicator.macd(data)[0]))
