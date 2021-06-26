@@ -212,13 +212,13 @@ class SARCross(Strategy):
     The feature of this indicator is to read the strength or weakness of the market by determining whether the high or low of the day is greater 
     than the high or low of the previous day, ignoring the comparison of closing prices, and to analyze the trend based on the volatility of prices.
     """
-    def __init__(self, broker, data, params, af=0.02, ep=0.2):
+    def __init__(self, broker, data, params, af=0.02, maxaf=0.2):
         self._indicators = []
         self._broker = broker
         self._data = data
         self._params = self._check_params(params)
         self.__init_af = af
-        self.__init_ep = ep
+        self.__maxaf = maxaf
 
     @property
     def init_af(self):
@@ -229,15 +229,15 @@ class SARCross(Strategy):
         self.__init_af = value
 
     @property
-    def init_ep(self):
-        return self.__init_ep
+    def maxaf(self):
+        return self.__maxaf
 
-    @init_ep.setter
-    def init_ep(self, value):
-        self.__init_ep = value
+    @maxaf.setter
+    def maxaf(self, value):
+        self.__maxaf = value
 
     def get(self):
-        return indicator.sar(data, self.init_af, self.init_ep)
+        return indicator.sar(data, self.init_af, self.maxaf)
 
     def init(self):
         self.sar, _, __ = self.I(self.get)
@@ -248,17 +248,70 @@ class SARCross(Strategy):
         elif crossover(self.sar, self.data['Close']):
             self.position.close()
 
+class RSICross(Strategy):
+    """
+    RSI
+    https://info.monex.co.jp/technical-analysis/indicators/005.html
+    Relative Strength Index
+    An indicator to determine how much the exchange rate has increased relative to the overall change in the exchange rate.
+    """
+    def __init__(self, broker, data, params, d=14, buy_ratio=0.3, sell_ratio=0.8):
+        self._indicators = []
+        self._broker = broker
+        self._data = data
+        self._params = self._check_params(params)
+        self.__d = d
+        self.__buy_ratio = buy_ratio
+        self.__sell_ratio = sell_ratio
+
+    @property
+    def d(self):
+        return self.__d
+
+    @d.setter
+    def d(self, value):
+        self.__d = value
+
+    @property
+    def buy_ratio(self):
+        return self.__buy_ratio
+
+    @buy_ratio.setter
+    def buy_ratio(self, value):
+        self.__buy_ratio = value
+    
+    @property
+    def sell_ratio(self):
+        return self.__sell_ratio
+
+    @sell_ratio.setter
+    def sell_ratio(self, value):
+        self.__sell_ratio = value
+
+    def get(self):
+        return indicator.rsi(data, self.d)
+
+    def init(self):
+        self.rsi = self.I(self.get)
+    
+    def next(self):
+        if crossover(self.buy_ratio, self.rsi):
+            self.buy()
+        elif crossover(self.rsi, self.sell_ratio):
+            self.position.close()
+
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
     data = d.loader('AAPL', '2015/01/01')
     # strategy = MACDCross
-    strategy = SARCross
+    strategy = RSICross
     # strategy = BBCross
     # setter
     # strategy.n1 = 100
     # strategy.n2 = 26
     # strategy.ns = 10
+    strategy.buy_ratio = 0.25
 
     import time
     start = time.time()
@@ -277,4 +330,4 @@ if __name__ == "__main__":
     print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
     bt.plot()
     print(output)
-    print(indicator.sar(data))
+    # print(indicator.sar(data))

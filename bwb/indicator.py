@@ -107,3 +107,13 @@ def sar(data, iaf=0.02, maxaf=0.2):
         else:
             psarbear[i] = psar[i]
     return pd.Series(data=psar, index=data.index), pd.Series(data=psarbear, index=data.index), pd.Series(data=psarbull, index=data.index)
+
+def rsi(data, span):
+    # Relative Strength Index
+    diff = data['Close'].diff()
+    up, down = diff.copy(), diff.copy()
+    up[up <= 0] = 0
+    down[down > 0] = 0
+    up_sma = up.rolling(window=span).sum().abs()
+    down_sma = down.rolling(window=span).sum().abs()
+    return 1.0 - (1.0 / (1.0 + (up_sma / down_sma)))
