@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Refer to the following sites
 # https://info.monex.co.jp/technical-analysis/indicators/
+from datetime import date
 import pandas as pd
 from backtesting import Backtest, Strategy 
 from backtesting.lib import crossover
@@ -172,9 +173,9 @@ class DMICross(Strategy):
     """
     DMI
     https://info.monex.co.jp/technical-analysis/indicators/015.html
-    Directional Movement Index
-    The feature of this indicator is to read the strength or weakness of the market by determining whether the high or low of the day is greater 
-    than the high or low of the previous day, ignoring the comparison of closing prices, and to analyze the trend based on the volatility of prices.
+    Stop And Reverse Point
+    Parabolic is a technical indicator that displays a parabolic line at the top or bottom of a chart, 
+    and is mainly useful when looking for trend turning points in the market.
     """
     def __init__(self, broker, data, params, d=14):
         self._indicators = []
@@ -203,12 +204,56 @@ class DMICross(Strategy):
         elif crossover(self.di_m, self.di_p):
             self.position.close()
 
+class SARCross(Strategy):
+    """
+    SAR
+    https://info.monex.co.jp/technical-analysis/indicators/021.html
+    Directional Movement Index
+    The feature of this indicator is to read the strength or weakness of the market by determining whether the high or low of the day is greater 
+    than the high or low of the previous day, ignoring the comparison of closing prices, and to analyze the trend based on the volatility of prices.
+    """
+    def __init__(self, broker, data, params, af=0.02, ep=0.2):
+        self._indicators = []
+        self._broker = broker
+        self._data = data
+        self._params = self._check_params(params)
+        self.__init_af = af
+        self.__init_ep = ep
+
+    @property
+    def init_af(self):
+        return self.__init_af
+
+    @init_af.setter
+    def init_af(self, value):
+        self.__init_af = value
+
+    @property
+    def init_ep(self):
+        return self.__init_ep
+
+    @init_ep.setter
+    def init_ep(self, value):
+        self.__init_ep = value
+
+    def get(self):
+        return indicator.sar(data, self.init_af, self.init_ep)
+
+    def init(self):
+        self.sar, _, __ = self.I(self.get)
+        
+    def next(self):
+        if crossover(self.data['Close'], self.sar):
+            self.buy()
+        elif crossover(self.sar, self.data['Close']):
+            self.position.close()
+
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
     data = d.loader('AAPL', '2015/01/01')
     # strategy = MACDCross
-    strategy = DMICross
+    strategy = SARCross
     # strategy = BBCross
     # setter
     # strategy.n1 = 100
@@ -232,3 +277,4 @@ if __name__ == "__main__":
     print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
     bt.plot()
     print(output)
+    print(indicator.sar(data))
