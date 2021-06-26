@@ -117,3 +117,17 @@ def rsi(data, span):
     up_sma = up.rolling(window=span).sum().abs()
     down_sma = down.rolling(window=span).sum().abs()
     return 1.0 - (1.0 / (1.0 + (up_sma / down_sma)))
+
+def fast_s(data, maxmin_span=9, k_span=3):
+    # Fast Stochastics
+    low_min  = data['Low'].rolling(window=maxmin_span).min()
+    high_max = data['High'].rolling(window=maxmin_span).max()
+    fast_per_k = 100 * (data['Close'] - low_min) / (high_max - low_min)
+    fast_per_d = fast_per_k.rolling(window = k_span).mean()
+    return fast_per_k, fast_per_d
+
+def slow_s(data, maxmin_span=9, k_span=3):
+    # Slow Stochastics
+    _, fast_per_d = fast_s(data, maxmin_span, k_span)
+    slow_per_k, slow_per_d = fast_per_d, fast_per_d.rolling(window=k_span).mean()
+    return slow_per_k, slow_per_d

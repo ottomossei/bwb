@@ -300,12 +300,55 @@ class RSICross(Strategy):
         elif crossover(self.rsi, self.sell_ratio):
             self.position.close()
 
+class StochasticsCross(Strategy):
+    """
+    Stochastics
+    https://info.monex.co.jp/technical-analysis/indicators/006.html
+    Relative Strength Index
+    Like RSI, it is an analytical method for determining overbought and oversold market conditions.
+    """
+    def __init__(self, broker, data, params, maxmin_span=9, k_span=3):
+        self._indicators = []
+        self._broker = broker
+        self._data = data
+        self._params = self._check_params(params)
+        self.__maxmin_span = maxmin_span
+        self.__k_span = k_span
+
+    @property
+    def maxmin_span(self):
+        return self.__maxmin_span
+
+    @maxmin_span.setter
+    def maxmin_span(self, value):
+        self.__maxmin_span = value
+    
+    @property
+    def k_span(self):
+        return self.__k_span
+
+    @k_span.setter
+    def k_span(self, value):
+        self.__k_span = value
+
+    def get(self):
+        return indicator.slow_s(data, self.maxmin_span, self.k_span)
+
+    def init(self):
+        self.slow_per_k, self.slow_per_d = self.I(self.get)
+    
+    def next(self):
+        if (crossover(20.0, self.slow_per_d) and (crossover(self.slow_per_k, self.slow_per_d))):
+            self.buy()
+        elif (crossover(self.slow_per_d, 80.0) and (crossover(self.slow_per_d, self.slow_per_k))):
+            self.position.close()
+
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
     data = d.loader('AAPL', '2015/01/01')
     # strategy = MACDCross
-    strategy = RSICross
+    strategy = StochasticsCross
     # strategy = BBCross
     # setter
     # strategy.n1 = 100
