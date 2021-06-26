@@ -16,12 +16,14 @@ class LocalDB():
         self.db_dir, self.db_ext = db_dir, db_ext
 
     def loader(self, issue, start, end = datetime.date.today(), source = 'yahoo'):
+        db_dir = self.db_dir + issue + '/'
+        if not os.path.exists(db_dir): os.mkdir(db_dir)
         update = False
         if (type(start) is str):
             start = dt.strptime(start, '%Y/%m/%d')
         if (type(end) is str):
             end = dt.strptime(end, '%Y/%m/%d')
-        file_path = self.db_dir + str(issue) + '.' + self.db_ext
+        file_path = db_dir + 'candle.' + self.db_ext
         start_dt = start.date() + td(days=1)
         start_str = start_dt.strftime('%Y/%m/%d')
         try:

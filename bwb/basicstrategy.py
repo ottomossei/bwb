@@ -2,6 +2,7 @@
 # Refer to the following sites
 # https://info.monex.co.jp/technical-analysis/indicators/
 from datetime import date
+import backtesting
 import pandas as pd
 from backtesting import Backtest, Strategy 
 from backtesting.lib import crossover
@@ -10,6 +11,33 @@ import indicator
 class Btest(Backtest):
     def _init__(self):
         super().__init__()
+    
+    def plot(self, issue, results: pd.Series = None, filename=None, plot_width=None,
+             plot_equity=True, plot_return=True, plot_pl=True,
+             plot_volume=True, plot_drawdown=True,
+             smooth_equity=False, relative_equity=True,
+             superimpose = True,
+             resample=True, reverse_indicators=False,
+             show_legend=True, open_browser=False):
+             backtesting._plotting.plot(
+                results=self._results,
+                df=self._data,
+                indicators=self._results._strategy._indicators,
+                filename='./LocalDB/' + issue + '/BestStrategy',
+                plot_width=plot_width,
+                plot_equity=plot_equity,
+                plot_return=plot_return,
+                plot_pl=plot_pl,
+                plot_volume=plot_volume,
+                plot_drawdown=plot_drawdown,
+                smooth_equity=smooth_equity,
+                relative_equity=relative_equity,
+                superimpose=superimpose,
+                resample=resample,
+                reverse_indicators=reverse_indicators,
+                show_legend=show_legend,
+                open_browser=open_browser)
+    
 
 class SMACross(Strategy):
     """
@@ -23,11 +51,19 @@ class SMACross(Strategy):
     """
     def __init__(self, broker, data, params, n1=5, n2=25):
         self._indicators = []
-        self._broker: _Broker = broker
-        self._data: _Data = data
+        self._broker = broker
+        self._data = data
         self._params = self._check_params(params)
         self.__n1 = n1
         self.__n2 = n2
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def n1(self):
@@ -70,12 +106,20 @@ class MACDCross(Strategy):
     """
     def __init__(self, broker, data, params, n1=12, n2=26, ns=9):
         self._indicators = []
-        self._broker: _Broker = broker
-        self._data: _Data = data
+        self._broker = broker
+        self._data = data
         self._params = self._check_params(params)
         self.__n1 = n1
         self.__n2 = n2
         self.__ns = ns
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def n1(self):
@@ -102,7 +146,7 @@ class MACDCross(Strategy):
         self.__ns = value
     
     def get(self):
-        return indicator.macd(data, self.n1, self.n2, self.ns)
+        return indicator.macd(self.candle, self.n1, self.n2, self.ns)
 
     def init(self):
         self.macd, self.macdsignal = self.I(self.get)
@@ -132,6 +176,14 @@ class BBCross(Strategy):
         self.__d = d
         self.__upper_sigma = upper_sigma
         self.__lower_sigma = lower_sigma
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def d(self):
@@ -158,7 +210,7 @@ class BBCross(Strategy):
         self.__lower_sigma = value
     
     def get(self):
-        return indicator.ci(data, self.d, self.upper_sigma, self.lower_sigma)
+        return indicator.ci(self.candle, self.d, self.upper_sigma, self.lower_sigma)
 
     def init(self):
         self.upper, self.lower = self.I(self.get)
@@ -184,6 +236,14 @@ class DMICross(Strategy):
         self._data = data
         self._params = self._check_params(params)
         self.__d = d
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def d(self):
@@ -194,7 +254,7 @@ class DMICross(Strategy):
         self.__d = value
     
     def get(self):
-        return indicator.di(data, self.d)
+        return indicator.di(self.candle, self.d)
 
     def init(self):
         self.di_p, self.di_m = self.I(self.get)
@@ -221,6 +281,14 @@ class SARCross(Strategy):
         self._params = self._check_params(params)
         self.__init_af = af
         self.__maxaf = maxaf
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def init_af(self):
@@ -239,7 +307,7 @@ class SARCross(Strategy):
         self.__maxaf = value
 
     def get(self):
-        return indicator.sar(data, self.init_af, self.maxaf)
+        return indicator.sar(self.candle, self.init_af, self.maxaf)
 
     def init(self):
         self.sar, _, __ = self.I(self.get)
@@ -266,6 +334,14 @@ class RSICross(Strategy):
         self.__d = d
         self.__buy_ratio = buy_ratio
         self.__sell_ratio = sell_ratio
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def d(self):
@@ -292,7 +368,7 @@ class RSICross(Strategy):
         self.__sell_ratio = value
 
     def get(self):
-        return indicator.rsi(data, self.d)
+        return indicator.rsi(self.candle, self.d)
 
     def init(self):
         self.rsi = self.I(self.get)
@@ -320,6 +396,14 @@ class StochasticsCross(Strategy):
         self.__k_span = k_span
         self.__buy_ratio = buy_ratio
         self.__sell_ratio = sell_ratio
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def maxmin_span(self):
@@ -354,7 +438,7 @@ class StochasticsCross(Strategy):
         self.__sell_ratio = value
 
     def get(self):
-        return indicator.slow_s(data, self.maxmin_span, self.k_span)
+        return indicator.slow_s(self.candle, self.maxmin_span, self.k_span)
 
     def init(self):
         self.slow_per_k, self.slow_per_d = self.I(self.get)
@@ -375,10 +459,18 @@ class PsychologicalCross(Strategy):
     """
     def __init__(self, broker, data, params, span=12):
         self._indicators = []
-        self._broker: _Broker = broker
-        self._data: _Data = data
+        self._broker = broker
+        self._data = data
         self._params = self._check_params(params)
         self.__span = span
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def span(self):
@@ -389,7 +481,7 @@ class PsychologicalCross(Strategy):
         self.__span = value
     
     def get(self):
-        return indicator.psyco(data, self.span)
+        return indicator.psyco(self.candle, self.span)
 
     def init(self):
         self.psyco = self.I(self.get)
@@ -419,6 +511,14 @@ class RCICross(Strategy):
         self.__sell_ratio = sell_ratio
 
     @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
+
+    @property
     def span(self):
         return self.__span
 
@@ -443,7 +543,7 @@ class RCICross(Strategy):
         self.__sell_ratio = value
 
     def get(self):
-        return indicator.rci(data, self.span)
+        return indicator.rci(self.candle, self.span)
 
     def init(self):
         self.rci = self.I(self.get)
@@ -470,6 +570,14 @@ class MAERCross(Strategy):
         self.__span = span
         self.__buy_ratio = buy_ratio
         self.__sell_ratio = sell_ratio
+    
+    @property
+    def candle(self):
+        return self.__candle
+
+    @candle.setter
+    def candle(self, value):
+        self.__candle = value
 
     @property
     def span(self):
@@ -496,7 +604,7 @@ class MAERCross(Strategy):
         self.__sell_ratio = value
 
     def get(self):
-        return indicator.maer(data, self.span)
+        return indicator.maer(self.candle, self.span)
 
     def init(self):
         self.maer = self.I(self.get)
