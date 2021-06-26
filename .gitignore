@@ -1,6 +1,5 @@
 .vscode
 debug.py
-*.html
 /LocalDB/
 *.pyc
 memo.txt
