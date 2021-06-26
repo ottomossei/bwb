@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from backtesting import Backtest, Strategy 
 from backtesting.lib import crossover
-import indicator
+from . import indicator
 
 class Btest(Backtest):
     def _init__(self):
