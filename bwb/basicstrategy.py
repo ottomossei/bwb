@@ -11,7 +11,6 @@ class Btest(Backtest):
     def _init__(self):
         super().__init__()
 
-
 class SMACross(Strategy):
     """
     MA(SMA)
@@ -507,34 +506,3 @@ class MAERCross(Strategy):
             self.buy()
         elif crossover(self.maer, self.sell_ratio):
             self.position.close()
-
-
-if __name__ == "__main__":
-    from db import LocalDB
-    d = LocalDB()
-    data = d.loader('AAPL', '2015/01/01')
-    # strategy = MACDCross
-    # strategy = PsychologicalCross
-    strategy = MAERCross
-    # strategy = BBCross
-    # setter
-    # strategy.n1 = 100
-    # strategy.n2 = 26
-    # strategy.ns = 10
-    # strategy.buy_ratio = -5
-    # strategy.sell_ratio = 8
-    
-    bt = Btest(
-        data = data,
-        strategy = strategy,
-        cash = 1000,
-        commission = 0.00495,
-        margin = 1.0,
-        trade_on_close = True,
-        exclusive_orders = True
-        )
-
-    output = bt.run()
-    print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
-    bt.plot()
-    print(output)
