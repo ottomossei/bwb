@@ -4,3 +4,4 @@ debug.py
 /LocalDB/
 *.pyc
 memo.txt
+/test/
