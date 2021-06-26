@@ -156,3 +156,6 @@ def rci(data, span=9):
         rci = (1-rci) * 100
         result.append(rci)
     return pd.Series(data=result, index=data.index)
+
+def maer(data, span=25):
+    return (data['Close'] - sma(data, span)) / sma(data, span) * 100

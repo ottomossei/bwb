@@ -456,23 +456,74 @@ class RCICross(Strategy):
             self.position.close()
 
 
+class MAERCross(Strategy):
+    """
+    MAER
+    https://info.monex.co.jp/technical-analysis/indicators/019.html
+    Moving Average Estrangement Rate
+    MAER is the percentage of the current price that is away from the moving average.
+    """
+    def __init__(self, broker, data, params, span=25, buy_ratio=-8, sell_ratio=5):
+        self._indicators = []
+        self._broker = broker
+        self._data = data
+        self._params = self._check_params(params)
+        self.__span = span
+        self.__buy_ratio = buy_ratio
+        self.__sell_ratio = sell_ratio
+
+    @property
+    def span(self):
+        return self.__span
+
+    @span.setter
+    def span(self, value):
+        self.__span = value
+
+    @property
+    def buy_ratio(self):
+        return self.__buy_ratio
+
+    @buy_ratio.setter
+    def buy_ratio(self, value):
+        self.__buy_ratio = value
+    
+    @property
+    def sell_ratio(self):
+        return self.__sell_ratio
+
+    @sell_ratio.setter
+    def sell_ratio(self, value):
+        self.__sell_ratio = value
+
+    def get(self):
+        return indicator.maer(data, self.span)
+
+    def init(self):
+        self.maer = self.I(self.get)
+    
+    def next(self):
+        if crossover(self.buy_ratio, self.maer):
+            self.buy()
+        elif crossover(self.maer, self.sell_ratio):
+            self.position.close()
+
+
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
     data = d.loader('AAPL', '2015/01/01')
     # strategy = MACDCross
     # strategy = PsychologicalCross
-    strategy = RCICross
+    strategy = MAERCross
     # strategy = BBCross
     # setter
     # strategy.n1 = 100
     # strategy.n2 = 26
     # strategy.ns = 10
-    strategy.buy_ratio = -80
-    strategy.sell_ratio = 80
-
-    import time
-    start = time.time()
+    # strategy.buy_ratio = -5
+    # strategy.sell_ratio = 8
+    
     bt = Btest(
         data = data,
         strategy = strategy,
@@ -484,8 +535,6 @@ if __name__ == "__main__":
         )
 
     output = bt.run()
-    elapsed_time = time.time() - start
     print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
     bt.plot()
     print(output)
-    print(indicator.rci(data))
