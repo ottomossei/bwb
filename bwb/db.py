@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from genericpath import exists
 import pandas as pd
 import pandas_datareader.data as web
 import datetime, os

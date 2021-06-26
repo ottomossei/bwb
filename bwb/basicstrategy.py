@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Refer to the following sites
-from datetime import date
 import backtesting
 import pandas as pd
 import numpy as np
