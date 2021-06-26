@@ -116,7 +116,7 @@ def rsi(data, span):
     down[down > 0] = 0
     up_sma = up.rolling(window=span).sum().abs()
     down_sma = down.rolling(window=span).sum().abs()
-    return 1.0 - (1.0 / (1.0 + (up_sma / down_sma)))
+    return 100 - (100 / (1.0 + (up_sma / down_sma)))
 
 def fast_s(data, maxmin_span=9, k_span=3):
     # Fast Stochastics
@@ -131,3 +131,28 @@ def slow_s(data, maxmin_span=9, k_span=3):
     _, fast_per_d = fast_s(data, maxmin_span, k_span)
     slow_per_k, slow_per_d = fast_per_d, fast_per_d.rolling(window=k_span).mean()
     return slow_per_k, slow_per_d
+
+def psyco(data, span=12):
+    close = data['Close'].shift(1)
+    win = data['Close'].copy()
+    win.loc[data['Close']-close > 0] = 1
+    win.loc[data['Close']-close <= 0] = 0
+    return win.rolling(span).sum() / span * 100
+
+def rci(data, span=9):
+    # Refer to https://note.com/sakiyama100/n/n935c8ba24aac
+    result = [None] * (span - 1)
+    for end in range(span-1, len(data['Close'])):
+        start = end - span + 1
+        target = data['Close'].iloc[start:end+1]
+        target_sorted = sorted(target,reverse=True)
+        i, d = 0, 0
+        while i < span:
+            time_rank = span - i
+            price_rank = target_sorted.index(target[i]) +1 
+            d = d + ((time_rank - price_rank)*(time_rank - price_rank))
+            i += 1
+        rci = 6*d  / (span * (span*span -1))
+        rci = (1-rci) * 100
+        result.append(rci)
+    return pd.Series(data=result, index=data.index)

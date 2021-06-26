@@ -11,6 +11,7 @@ class Btest(Backtest):
     def _init__(self):
         super().__init__()
 
+
 class SMACross(Strategy):
     """
     MA(SMA)
@@ -169,6 +170,7 @@ class BBCross(Strategy):
         elif crossover(self.upper, self.data['Close']):
             self.position.close()
 
+
 class DMICross(Strategy):
     """
     DMI
@@ -203,6 +205,7 @@ class DMICross(Strategy):
             self.buy()
         elif crossover(self.di_m, self.di_p):
             self.position.close()
+
 
 class SARCross(Strategy):
     """
@@ -248,6 +251,7 @@ class SARCross(Strategy):
         elif crossover(self.sar, self.data['Close']):
             self.position.close()
 
+
 class RSICross(Strategy):
     """
     RSI
@@ -255,7 +259,7 @@ class RSICross(Strategy):
     Relative Strength Index
     An indicator to determine how much the exchange rate has increased relative to the overall change in the exchange rate.
     """
-    def __init__(self, broker, data, params, d=14, buy_ratio=0.3, sell_ratio=0.8):
+    def __init__(self, broker, data, params, d=14, buy_ratio=30, sell_ratio=80):
         self._indicators = []
         self._broker = broker
         self._data = data
@@ -300,6 +304,7 @@ class RSICross(Strategy):
         elif crossover(self.rsi, self.sell_ratio):
             self.position.close()
 
+
 class StochasticsCross(Strategy):
     """
     Stochastics
@@ -307,13 +312,15 @@ class StochasticsCross(Strategy):
     Relative Strength Index
     Like RSI, it is an analytical method for determining overbought and oversold market conditions.
     """
-    def __init__(self, broker, data, params, maxmin_span=9, k_span=3):
+    def __init__(self, broker, data, params, maxmin_span=9, k_span=3, buy_ratio=20, sell_ratio=80):
         self._indicators = []
         self._broker = broker
         self._data = data
         self._params = self._check_params(params)
         self.__maxmin_span = maxmin_span
         self.__k_span = k_span
+        self.__buy_ratio = buy_ratio
+        self.__sell_ratio = sell_ratio
 
     @property
     def maxmin_span(self):
@@ -330,6 +337,22 @@ class StochasticsCross(Strategy):
     @k_span.setter
     def k_span(self, value):
         self.__k_span = value
+    
+    @property
+    def buy_ratio(self):
+        return self.__buy_ratio
+
+    @buy_ratio.setter
+    def buy_ratio(self, value):
+        self.__buy_ratio = value
+    
+    @property
+    def sell_ratio(self):
+        return self.__sell_ratio
+
+    @sell_ratio.setter
+    def sell_ratio(self, value):
+        self.__sell_ratio = value
 
     def get(self):
         return indicator.slow_s(data, self.maxmin_span, self.k_span)
@@ -338,23 +361,115 @@ class StochasticsCross(Strategy):
         self.slow_per_k, self.slow_per_d = self.I(self.get)
     
     def next(self):
-        if (crossover(20.0, self.slow_per_d) and (crossover(self.slow_per_k, self.slow_per_d))):
+        if (crossover(self.buy_ratio, self.slow_per_d) and (crossover(self.slow_per_k, self.slow_per_d))):
             self.buy()
-        elif (crossover(self.slow_per_d, 80.0) and (crossover(self.slow_per_d, self.slow_per_k))):
+        elif (crossover(self.slow_per_d, self.sell_ratio) and (crossover(self.slow_per_d, self.slow_per_k))):
             self.position.close()
+
+
+class PsychologicalCross(Strategy):
+    """
+    Psychological line
+    https://info.monex.co.jp/technical-analysis/indicators/007.html
+    The psychological line is an indicator that quantifies the "psychology of investors," and its calculation formula is simple and easy to understand.
+    It is mainly effective in determining the strength and weakness of the market, and determining where to buy and sell.
+    """
+    def __init__(self, broker, data, params, span=12):
+        self._indicators = []
+        self._broker: _Broker = broker
+        self._data: _Data = data
+        self._params = self._check_params(params)
+        self.__span = span
+
+    @property
+    def span(self):
+        return self.__span
+
+    @span.setter
+    def span(self, value):
+        self.__span = value
+    
+    def get(self):
+        return indicator.psyco(data, self.span)
+
+    def init(self):
+        self.psyco = self.I(self.get)
+    
+    def next(self):
+        if 25 > self.psyco:
+            self.buy()
+        elif self.psyco > 75:
+            self.position.close()
+
+
+class RCICross(Strategy):
+    """
+    RCI
+    https://info.monex.co.jp/technical-analysis/indicators/017.html
+    Rank Correlation Index
+    RCI is one of the indicators that quantify the psychology of investors to time their trades.
+    It ranks the date and price respectively, and focuses on how much correlation there is between each.
+    """
+    def __init__(self, broker, data, params, span=9, buy_ratio=-100, sell_ratio=100):
+        self._indicators = []
+        self._broker = broker
+        self._data = data
+        self._params = self._check_params(params)
+        self.__span = span
+        self.__buy_ratio = buy_ratio
+        self.__sell_ratio = sell_ratio
+
+    @property
+    def span(self):
+        return self.__span
+
+    @span.setter
+    def span(self, value):
+        self.__span = value
+
+    @property
+    def buy_ratio(self):
+        return self.__buy_ratio
+
+    @buy_ratio.setter
+    def buy_ratio(self, value):
+        self.__buy_ratio = value
+    
+    @property
+    def sell_ratio(self):
+        return self.__sell_ratio
+
+    @sell_ratio.setter
+    def sell_ratio(self, value):
+        self.__sell_ratio = value
+
+    def get(self):
+        return indicator.rci(data, self.span)
+
+    def init(self):
+        self.rci = self.I(self.get)
+    
+    def next(self):
+        if crossover(self.buy_ratio, self.rci):
+            self.buy()
+        elif crossover(self.rci, self.sell_ratio):
+            self.position.close()
+
 
 if __name__ == "__main__":
     from db import LocalDB
     d = LocalDB()
     data = d.loader('AAPL', '2015/01/01')
     # strategy = MACDCross
-    strategy = StochasticsCross
+    # strategy = PsychologicalCross
+    strategy = RCICross
     # strategy = BBCross
     # setter
     # strategy.n1 = 100
     # strategy.n2 = 26
     # strategy.ns = 10
-    strategy.buy_ratio = 0.25
+    strategy.buy_ratio = -80
+    strategy.sell_ratio = 80
 
     import time
     start = time.time()
@@ -373,4 +488,4 @@ if __name__ == "__main__":
     print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
     bt.plot()
     print(output)
-    # print(indicator.sar(data))
+    print(indicator.rci(data))
