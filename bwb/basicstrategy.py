@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # Refer to the following sites
-# https://info.monex.co.jp/technical-analysis/indicators/
 from datetime import date
 import backtesting
 import pandas as pd
+import numpy as np
 from backtesting import Backtest, Strategy 
 from backtesting.lib import crossover
 import indicator
@@ -56,6 +56,12 @@ class SMACross(Strategy):
         self._params = self._check_params(params)
         self.__n1 = n1
         self.__n2 = n2
+    
+    def base_params():
+        return {
+            'n1':np.array([5, 25, 75, 100, 200]),
+            'n2':np.array([5, 25, 75, 100, 200])
+            }
     
     @property
     def candle(self):
@@ -112,6 +118,13 @@ class MACDCross(Strategy):
         self.__n1 = n1
         self.__n2 = n2
         self.__ns = ns
+    
+    def base_params():
+        return {
+            'n1':np.array([6, 12, 18]),
+            'n2':np.array([13, 26, 39]),
+            'ns':np.array([5, 9, 15]),
+            }
     
     @property
     def candle(self):
@@ -176,6 +189,13 @@ class BBCross(Strategy):
         self.__d = d
         self.__upper_sigma = upper_sigma
         self.__lower_sigma = lower_sigma
+
+    def base_params():
+        return {
+            'd':np.array([9, 10, 20, 21, 50, 75, 100]),
+            'upper_sigma':np.array([1, 2, 3]),
+            'lower_sigma':np.array([1, 2, 3]),
+            }
     
     @property
     def candle(self):
@@ -237,6 +257,11 @@ class DMICross(Strategy):
         self._params = self._check_params(params)
         self.__d = d
     
+    def base_params():
+        return {
+            'd':np.array([7, 14, 21, 28, 35])
+            }
+    
     @property
     def candle(self):
         return self.__candle
@@ -281,6 +306,12 @@ class SARCross(Strategy):
         self._params = self._check_params(params)
         self.__init_af = af
         self.__maxaf = maxaf
+    
+    def base_params():
+        return {
+            'af':np.array([0.01, 0.02, 0.05, 0.1]),
+            'maxaf':np.array([0.1, 0.15, 0.2, 0.25])
+            }
     
     @property
     def candle(self):
@@ -334,6 +365,13 @@ class RSICross(Strategy):
         self.__d = d
         self.__buy_ratio = buy_ratio
         self.__sell_ratio = sell_ratio
+    
+    def base_params():
+        return {
+            'd':np.array([9, 14, 22, 42, 52]),
+            'buy_ratio':np.array([10, 15, 20, 25, 30, 35]),
+            'sell_ratio':np.array([65, 70, 75, 80, 85, 90])
+            }
     
     @property
     def candle(self):
@@ -397,6 +435,14 @@ class StochasticsCross(Strategy):
         self.__buy_ratio = buy_ratio
         self.__sell_ratio = sell_ratio
     
+    def base_params():
+        return {
+            'maxmin_span':np.array([5, 9, 14, 21, 30]),
+            'k_span':np.array([2, 3, 4, 5]),
+            'buy_ratio':np.array([10, 15, 20, 25, 30, 35]),
+            'sell_ratio':np.array([65, 70, 75, 80, 85, 90])
+            }
+    
     @property
     def candle(self):
         return self.__candle
@@ -457,12 +503,21 @@ class PsychologicalCross(Strategy):
     The psychological line is an indicator that quantifies the "psychology of investors," and its calculation formula is simple and easy to understand.
     It is mainly effective in determining the strength and weakness of the market, and determining where to buy and sell.
     """
-    def __init__(self, broker, data, params, span=12):
+    def __init__(self, broker, data, params, span=12, buy_ratio=25, sell_ratio=75):
         self._indicators = []
         self._broker = broker
         self._data = data
         self._params = self._check_params(params)
         self.__span = span
+        self.__buy_ratio = buy_ratio
+        self.__sell_ratio = sell_ratio
+    
+    def base_params():
+        return {
+            'span':np.array([5, 12, 19]),
+            'buy_ratio':np.array([10, 15, 20, 25, 30, 35]),
+            'sell_ratio':np.array([65, 70, 75, 80, 85, 90])
+            }
     
     @property
     def candle(self):
@@ -479,6 +534,22 @@ class PsychologicalCross(Strategy):
     @span.setter
     def span(self, value):
         self.__span = value
+
+    @property
+    def buy_ratio(self):
+        return self.__buy_ratio
+
+    @buy_ratio.setter
+    def buy_ratio(self, value):
+        self.__buy_ratio = value
+    
+    @property
+    def sell_ratio(self):
+        return self.__sell_ratio
+
+    @sell_ratio.setter
+    def sell_ratio(self, value):
+        self.__sell_ratio = value
     
     def get(self):
         return indicator.psyco(self.candle, self.span)
@@ -509,6 +580,13 @@ class RCICross(Strategy):
         self.__span = span
         self.__buy_ratio = buy_ratio
         self.__sell_ratio = sell_ratio
+    
+    def base_params():
+        return {
+            'span':np.array([7, 8, 9, 21, 23, 26, 42, 45, 48, 52]),
+            'buy_ratio':np.array([-100, -90, -80, -70]),
+            'sell_ratio':np.array([70, 80, 90, 100])
+            }
 
     @property
     def candle(self):
@@ -571,6 +649,13 @@ class MAERCross(Strategy):
         self.__buy_ratio = buy_ratio
         self.__sell_ratio = sell_ratio
     
+    def base_params():
+        return {
+            'span':np.array([5, 25, 75, 100, 200]),
+            'buy_ratio':np.array([-5, -6, -7, -8, -9, -10]),
+            'sell_ratio':np.array([5, 6, 7, 8, 9, 10])
+            }
+
     @property
     def candle(self):
         return self.__candle
