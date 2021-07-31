@@ -59,15 +59,7 @@ class LocalDB():
         if (self.db_ext == 'csv') and update:
             df.to_csv(file_path, index = None)
         return df
-    
-    # @staticmethod
-    # def _reader(issue, start, end, source):
-    #     try:
-    #         df = web.DataReader(issue, source, start, end)
-    #     except:
-    #         df = web.DataReader(issue, source, end, start)
-    #     df.insert(0, 'Date', df.index)
-    #     return df
+
 
     @staticmethod
     def _reader(issue, start, end, source):
