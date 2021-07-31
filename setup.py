@@ -6,7 +6,7 @@ with open('requirements.txt') as requirements_file:
 
 setup(
     name="bwb",
-    version="1.0.6",
+    version="1.0.7",
     description="The fundamental package for backtesting of stock trading with Python.",
     author="ottomossei",
     author_email="seki.jobhunting@gmail.com",

@@ -6,6 +6,7 @@ import numpy as np
 from backtesting import Backtest, Strategy 
 from backtesting.lib import crossover
 from . import indicator
+# import indicator
 
 class Btest(Backtest):
     def _init__(self):
@@ -18,11 +19,12 @@ class Btest(Backtest):
              superimpose = True,
              resample=True, reverse_indicators=False,
              show_legend=True, open_browser=False):
+             print(self._results._strategy)
              backtesting._plotting.plot(
                 results=self._results,
                 df=self._data,
                 indicators=self._results._strategy._indicators,
-                filename='./LocalDB/' + issue + '/BestStrategy',
+                filename='./LocalDB/' + issue +  '/' + str(self._results._strategy) + '/' + str(self._results._strategy) + '_Graph',
                 plot_width=plot_width,
                 plot_equity=plot_equity,
                 plot_return=plot_return,

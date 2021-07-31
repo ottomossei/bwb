@@ -6,6 +6,9 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 import yfinance as yf
 
+from . import customstrategy as cst
+# import customstrategy as cst
+
 
 class LocalDB():
     curdir = os.getcwd() + "/LocalDB/"
@@ -72,6 +75,29 @@ class LocalDB():
 
     def saver(self, df, issue, name):
         df.to_csv(self.db_dir + issue + '/' + str(name) + '.csv')
+    
+    def runsaver(self, strategy, candle, issue):
+        strategy.candle = candle
+        strategy_name = str(strategy.__name__)
+        strategy_dir =self.db_dir + issue + '/' + strategy_name + '/'
+        if not os.path.exists(strategy_dir): os.mkdir(strategy_dir)
+        tester = cst.Btest(
+            data = candle,
+            strategy = strategy,
+            cash = 1000,
+            commission = 0.00495,
+            margin = 1.0,
+            trade_on_close = True,
+            exclusive_orders = True
+            )
+        output = tester.run()
+
+        equity = output['_equity_curve']
+        trade = output['_trades']
+        self.saver(equity, issue,  strategy_name + '/equity')
+        self.saver(trade, issue, strategy_name + '/trade')
+        self.saver(output, issue, strategy_name + '/all')
+        p = tester.plot(issue=issue)
 
 if __name__ == '__main__':
     d = LocalDB()
