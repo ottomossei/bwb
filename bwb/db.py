@@ -4,6 +4,7 @@ import pandas_datareader.data as web
 import datetime, os
 from datetime import datetime as dt
 from datetime import timedelta as td
+import yfinance as yf
 
 
 class LocalDB():
@@ -59,15 +60,27 @@ class LocalDB():
             df.to_csv(file_path, index = None)
         return df
     
+    # @staticmethod
+    # def _reader(issue, start, end, source):
+    #     try:
+    #         df = web.DataReader(issue, source, start, end)
+    #     except:
+    #         df = web.DataReader(issue, source, end, start)
+    #     df.insert(0, 'Date', df.index)
+    #     return df
+
     @staticmethod
     def _reader(issue, start, end, source):
-        try:
-            df = web.DataReader(issue, source, start, end)
-        except:
-            df = web.DataReader(issue, source, end, start)
+        yf.pdr_override()
+        start = dt.strptime(start, '%Y/%m/%d')
+        end = dt.strptime(end, '%Y/%m/%d')
+        df = web.get_data_yahoo(issue, data_source='yahoo', start=start, end=end)
         df.insert(0, 'Date', df.index)
         return df
 
+    def saver(self, df, issue, name):
+        df.to_csv(self.db_dir + issue + '/' + str(name) + '.csv')
+
 if __name__ == '__main__':
     d = LocalDB()
-    myd = d.loader('AAPL', '2018/11/01')
+    myd = d.loader('AAPL', '2018/11/01', end = '2021/06/01')
