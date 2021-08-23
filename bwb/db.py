@@ -6,8 +6,11 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 import yfinance as yf
 
-from . import customstrategy as cst
-# import customstrategy as cst
+try:
+    from . import customstrategy as cst
+except:
+    import customstrategy as cst
+
 
 
 class LocalDB():
