@@ -85,7 +85,6 @@ class LocalDB():
         strategy_dir =self.db_dir + issue + '/' + strategy_name + '/'
         if not os.path.exists(strategy_dir): os.mkdir(strategy_dir)
         tester = cst.Btest(
-            data = candle,
             strategy = strategy,
             cash = 1000,
             commission = 0.00495,
@@ -93,6 +92,7 @@ class LocalDB():
             trade_on_close = True,
             exclusive_orders = True
             )
+        # tester = cst.Btest(strategy)
         output = tester.run()
 
         equity = output['_equity_curve']
@@ -100,7 +100,7 @@ class LocalDB():
         self.saver(equity, issue,  strategy_name + '/equity')
         self.saver(trade, issue, strategy_name + '/trade')
         self.saver(output, issue, strategy_name + '/all')
-        p = tester.plot(issue=issue)
+        return output
 
 if __name__ == '__main__':
     d = LocalDB()
