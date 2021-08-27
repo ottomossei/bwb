@@ -34,20 +34,19 @@ class Btest(Backtest):
     def __init__(self, strategy, cash = 1000, commission = 0.00495, margin = 1.0, trade_on_close = True, exclusive_orders = True):
         data = strategy.candle
         super().__init__(data=data, strategy=strategy, cash=cash, commission=commission, margin=margin, trade_on_close=trade_on_close, exclusive_orders=exclusive_orders)
-    
-    def plot(self, issue, results: pd.Series = None, filename=None, plot_width=None,
+        
+    def htmlsaver(self, path, results: pd.Series = None, filename=None, plot_width=None,
              plot_equity=True, plot_return=True, plot_pl=True,
              plot_volume=True, plot_drawdown=True,
              smooth_equity=False, relative_equity=True,
              superimpose = True,
              resample=True, reverse_indicators=False,
              show_legend=True, open_browser=False):
-             print(self._results._strategy)
              backtesting._plotting.plot(
                 results=self._results,
                 df=self._data,
                 indicators=self._results._strategy._indicators,
-                filename='./LocalDB/' + issue +  '/' + str(self._results._strategy) + '/' + str(self._results._strategy) + '_Graph',
+                filename=path,
                 plot_width=plot_width,
                 plot_equity=plot_equity,
                 plot_return=plot_return,

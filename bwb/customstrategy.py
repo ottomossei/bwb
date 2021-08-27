@@ -63,13 +63,5 @@ class CustomStrategy(Strategy):
     def custom_params(self, value):
         self.__custom_params = value
 
-    # def init(self):
-    #     """
-    #     init : Process to be repeated as the day progresses.
-    #     self.I : Functions of the Strategy class. Declare indicator.
-    #     """
-    #     self.macd, self.macdsignal = self.I(indicator.macd, self.candle, day_short=9, day_long=26, span=9)
-
-
     def next(self):
         self.today += 1

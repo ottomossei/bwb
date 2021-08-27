@@ -5,86 +5,133 @@ import datetime, os
 from datetime import datetime as dt
 from datetime import timedelta as td
 import yfinance as yf
+from abc import ABCMeta, abstractmethod
+
+from pycheck.variable import info
+
+# try:
+#     from . import customstrategy as cst
+# except:
+#     import customstrategy as cst
 
 try:
-    from . import customstrategy as cst
+    from . import basicstrategy as bst
 except:
-    import customstrategy as cst
+    import basicstrategy as bst
 
+GET_CANDDLE = 'yfinance'
 
+def str_to_date(t):
+    return dt.strptime(t, '%Y-%m-%d').date()
 
-class LocalDB():
-    curdir = os.getcwd() + "/LocalDB/"
-    db_ext = 'csv'
+def datetime_to_date(t):
+    return t.date()
 
-    def __init__(self, db_dir = curdir, db_ext = db_ext):
-        if not os.path.exists(db_dir): os.mkdir(db_dir)
-        self.db_dir, self.db_ext = db_dir, db_ext
+def get_today():
+    return datetime.date.today()
 
-    def loader(self, issue, start, end = datetime.date.today(), source = 'yahoo'):
-        self.db_dir_issue = self.db_dir + issue + '/'
-        if not os.path.exists(self.db_dir_issue): os.mkdir(self.db_dir_issue)
-        update = False
-        if (type(start) is str):
-            start = dt.strptime(start, '%Y/%m/%d')
-        if (type(end) is str):
-            end = dt.strptime(end, '%Y/%m/%d')
-        file_path = self.db_dir_issue + 'candle.' + self.db_ext
-        start_dt = start.date() + td(days=1)
-        start_str = start_dt.strftime('%Y/%m/%d')
-        try:
-            end_dt = end.date() - td(days=1)
-        except:
-            end_dt = end - td(days=1)
-        end_str = end_dt.strftime('%Y/%m/%d')
-        if not os.path.exists(file_path):
-            df = self._reader(issue, start_str, end_str, source)
-            update = True
-        else:
-            if self.db_ext == 'csv':
-                df = pd.read_csv(file_path, index_col=0)
-            df.insert(0, 'Date', df.index.values)
-            start_db_dt = dt.strptime(df['Date'].values[0], '%Y-%m-%d') - td(days=1)
-            start_db_str = start_db_dt.strftime('%Y/%m/%d')
-            end_db_dt = dt.strptime(df['Date'].values[-1], '%Y-%m-%d') + td(days=1)
-            end_db_str = end_db_dt.date().strftime('%Y/%m/%d')
-            if start_dt < start_db_dt.date():
-                df_start = self._reader(issue, start_str, start_db_str, source)
-                df_start['Date'] = df_start['Date'].astype(str)
-                df_start['Volume'] = df_start['Volume'].astype(float)
-                df = pd.concat([df_start, df], axis=0)
-                update = True
-            if (end_dt >= end_db_dt.date()) and  (type(end_dt) is not datetime.datetime):
-                df_end = self._reader(issue, end_str, end_db_str, source)
-                df_end['Date'] = df_end['Date'].astype(str)
-                df_end['Volume'] = df_end['Volume'].astype(float)
-                df = pd.concat([df, df_end[1:]], axis=0)
-                update = True
-        df = df[~df.duplicated(subset='Date')]
-        df.index = pd.to_datetime(df.index)
-        if (self.db_ext == 'csv') and update:
-            df.to_csv(file_path, index = None)
-        return df
+class ObjectDB(metaclass = ABCMeta):
+    @abstractmethod
+    def reader(self):
+        pass
 
+    @abstractmethod
+    def loader(self):
+        pass
+
+    @abstractmethod
+    def saver(self):
+        pass
 
     @staticmethod
-    def _reader(issue, start, end, source):
-        yf.pdr_override()
-        start = dt.strptime(start, '%Y/%m/%d')
-        end = dt.strptime(end, '%Y/%m/%d')
-        df = web.get_data_yahoo(issue, data_source='yahoo', start=start, end=end)
-        df.insert(0, 'Date', df.index)
-        return df
-
-    def saver(self, df, issue, name):
-        df.to_csv(self.db_dir + issue + '/' + str(name) + '.csv')
+    def is_str(v):
+        return type(v) is str
     
-    def runsaver(self, strategy, candle, issue):
-        strategy.candle = candle
-        strategy_name = str(strategy.__name__)
-        strategy_dir =self.db_dir + issue + '/' + strategy_name + '/'
-        if not os.path.exists(strategy_dir): os.mkdir(strategy_dir)
-        tester = cst.Btest(
+    @staticmethod
+    def is_path(path):
+        return os.path.exists(path)
+    
+    def is_renew(self):
+        return (self.start < self.df_candle.index[0]) or (self.end > self.df_candle.index[-1]+td(days=1))
+    
+    def add_path(self, path):
+        if (not self.is_path(path)) and ('.' not in path): os.mkdir(path)
+
+    def get_candle_from_yfinance(self):
+        '''
+        standard output
+            $start:(input 0714, output 0713), $end :(input 0721, output 0720)
+        $start is to +1, $end is to stay the same.
+        In Japan, the US market starts at night and ends in the morning.
+        Therefore, it is better to get the stock price one day before Japan time (=end) while the US market is closed.
+        '''
+        yf.pdr_override()
+        return web.get_data_yahoo(self.issue, data_source='yahoo', start=self.start+td(days=1), end=self.end)
+        
+    def get_df_candle(self):
+        if GET_CANDDLE == 'yfinance':return self.get_candle_from_yfinance()
+
+    def set_period(self, start, end):
+        self.start, self.end = str_to_date(start), str_to_date(end)
+    
+class LocalDB(ObjectDB):
+    def basic_format():
+        return 'csv'
+
+    def get_path_localdb():
+        return os.getcwd() + "/LocalDB/"
+
+    @staticmethod
+    def init_path(root):
+        return {
+                'LocalDB':root,
+                }
+
+    def __init__(self, path_localdb=get_path_localdb(), save_format=basic_format()):
+        self.save_format = save_format
+        self.init_db(path_localdb)
+
+    def init_db(self, root):
+        self.path = self.init_path(root)
+        self.reflect_path()
+    
+    def reflect_path(self):
+        for path in self.path.values():
+            self.add_path(path)
+
+    def reader(self):
+        if self.save_format=='csv':
+            self.df_candle = pd.read_csv(self.path['candle'], index_col=0)
+            self.df_candle.index = pd.to_datetime(self.df_candle.index, dayfirst=True)
+    
+    def loader(self, issue, start, end):
+        print(issue)
+        self.set_period(start, end)
+        self.issue = issue
+        self.path['issue'] = self.path['LocalDB'] + issue + '/'
+        self.path['candle']= self.path['issue'] + 'candle.' + self.save_format
+        self.reflect_path()
+        # xxx/candle.csv is not found
+        if not self.is_path(self.path['candle']):
+            self.df_candle = self.get_df_candle()
+            self.saver(self.df_candle, self.path['candle'])
+        # xxx/candle.csv is found
+        else:
+            self.reader()
+            # renew candle
+            if self.is_renew():self.saver(self.df_candle, self.path['candle'])
+        return self.df_candle
+    
+    def saver(self, df, path):
+        df.to_csv(path)
+    
+    def runsaver(self, strategy):
+        self.path['strategy'] = self.path['issue'] + str(self.start) + '_' + str(self.end) + '_' + str(strategy.__name__) + '/'
+        self.path['equity'] = self.path['strategy'] + 'equity.' + self.save_format
+        self.path['trade'] = self.path['strategy'] + 'trade.' + self.save_format
+        self.path['result'] = self.path['strategy'] + 'overview.' + self.save_format
+        self.reflect_path()
+        tester = bst.Btest(
             strategy = strategy,
             cash = 1000,
             commission = 0.00495,
@@ -92,16 +139,11 @@ class LocalDB():
             trade_on_close = True,
             exclusive_orders = True
             )
-        # tester = cst.Btest(strategy)
-        output = tester.run()
-
-        equity = output['_equity_curve']
-        trade = output['_trades']
-        self.saver(equity, issue,  strategy_name + '/equity')
-        self.saver(trade, issue, strategy_name + '/trade')
-        self.saver(output, issue, strategy_name + '/all')
-        return output
-
-if __name__ == '__main__':
-    d = LocalDB()
-    myd = d.loader('AAPL', '2018/11/01', end = '2021/06/01')
+        df_result = tester.run()
+        tester.htmlsaver(self.path['strategy'] + 'bokeh')
+        df_equity = df_result['_equity_curve']
+        df_trade = df_result['_trades'].set_index('Size')
+        self.saver(df_equity, self.path['equity'])
+        self.saver(df_trade, self.path['trade'])
+        self.saver(df_result, self.path['result'])
+        return df_result
