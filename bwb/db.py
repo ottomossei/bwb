@@ -9,11 +9,6 @@ from abc import ABCMeta, abstractmethod
 
 from pycheck.variable import info
 
-# try:
-#     from . import customstrategy as cst
-# except:
-#     import customstrategy as cst
-
 try:
     from . import basicstrategy as bst
 except:
