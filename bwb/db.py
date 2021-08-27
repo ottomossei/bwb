@@ -7,8 +7,6 @@ from datetime import timedelta as td
 import yfinance as yf
 from abc import ABCMeta, abstractmethod
 
-from pycheck.variable import info
-
 try:
     from . import basicstrategy as bst
 except:
